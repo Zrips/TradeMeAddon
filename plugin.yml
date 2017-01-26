@@ -1,0 +1,6 @@
+name: TradeMeAddon
+main: me.Zrips.TradeMeAddon.TradeMeAddon
+version: 1.0.0.0
+author: Zrips
+description: TradeMe addon
+depend: [TradeMe]
