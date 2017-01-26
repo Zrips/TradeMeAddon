@@ -11,7 +11,6 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import me.Zrips.TradeMe.ActionBar;
 import me.Zrips.TradeMe.TradeMe;
 import me.Zrips.TradeMe.Containers.Amounts;
 import me.Zrips.TradeMe.Containers.OfferButtons;
@@ -24,13 +23,15 @@ import me.Zrips.TradeMe.Containers.TradeSize;
 public class Exp implements TradeModeInterface {
 
     private String at = "Exp";
+    private TradeMe plugin;
 
     List<ItemStack> AmountButtons = new ArrayList<ItemStack>();
     ItemStack OfferedTradeButton = new ItemStack(Material.STONE);
     OfferButtons offerButton = new OfferButtons();
     Amounts amounts = new Amounts(1, 100, 10000, 1000000);
 
-    public Exp(String name) {
+    public Exp(TradeMe plugin, String name) {
+	this.plugin = plugin;
 	at = name;
     }
 
@@ -132,19 +133,19 @@ public class Exp implements TradeModeInterface {
 	double Sourceleftexp = (int) (getPlayerExperience(trade.getP1()) - offerAmount);
 	double newSourceLevel = EXPLevelFromExp(Sourceleftexp, trade.getP1().getLevel());
 	double leftSourceExp = Sourceleftexp - EXPlevelToExp(newSourceLevel);
-	String taxes = TradeMe.getUtil().GetTaxesString(at, offerAmount);
-	double Targetleftexp = getPlayerExperience(trade.getP2()) + TradeMe.getUtil().CheckTaxes(at, offerAmount);
+	String taxes = plugin.getUtil().GetTaxesString(at, offerAmount);
+	double Targetleftexp = getPlayerExperience(trade.getP2()) + plugin.getUtil().CheckTaxes(at, offerAmount);
 
 	double newTargetLevel = EXPLevelFromExp(Targetleftexp, trade.getP1().getLevel() + trade.getP2().getLevel());
 	double leftTargetExp = Targetleftexp - EXPlevelToExp(newTargetLevel);
 
 	String mid = "";
 	if (trade.getButtonList().size() > 4)
-	    mid = "\n" + TradeMe.getMessage("MiddleMouse");
+	    mid = "\n" + plugin.getMessage("MiddleMouse");
 
 	if (trade.Size == TradeSize.REGULAR)
-	    GuiInv.setItem(slot, TradeMe.getUtil().makeSlotItem(ob, TradeMe.getMessage(at, "ToggleButton.Name"),
-		TradeMe.getMessageListAsString(at, "ToggleButton.Lore",
+	    GuiInv.setItem(slot, plugin.getUtil().makeSlotItem(ob, plugin.getMessage(at, "ToggleButton.Name"),
+		plugin.getMessageListAsString(at, "ToggleButton.Lore",
 		    "[amount]", offerAmount,
 		    "[taxes]", taxes,
 		    "[sourcelevel]", newSourceLevel,
@@ -155,12 +156,12 @@ public class Exp implements TradeModeInterface {
 	    return GuiInv;
 
 	for (int i = 45; i < 49; i++) {
-	    GuiInv.setItem(i, TradeMe.getUtil().makeSlotItem(AmountButtons.get(i - 45),
-		TradeMe.getMessage(at, "Button.Name",
-		    "[amount]", TradeMe.getUtil().TrA(amounts.get(i - 45))),
-		TradeMe.getMessageListAsString(at, "Button.Lore",
-		    "[balance]", TradeMe.getUtil().TrA(getPlayerExperience(trade.getP1())),
-		    "[offer]", TradeMe.getUtil().TrA(offerAmount),
+	    GuiInv.setItem(i, plugin.getUtil().makeSlotItem(AmountButtons.get(i - 45),
+		plugin.getMessage(at, "Button.Name",
+		    "[amount]", plugin.getUtil().TrA(amounts.get(i - 45))),
+		plugin.getMessageListAsString(at, "Button.Lore",
+		    "[balance]", plugin.getUtil().TrA(getPlayerExperience(trade.getP1())),
+		    "[offer]", plugin.getUtil().TrA(offerAmount),
 		    "[taxes]", taxes,
 		    "[sourcelevel]", newSourceLevel,
 		    "[sourceexp]", leftSourceExp,
@@ -187,7 +188,7 @@ public class Exp implements TradeModeInterface {
 	if (button.isLeftClick())
 	    if (OfferedExp + amount > PlayerExp) {
 		trade.setOffer(at, PlayerExp);
-		trade.getP1().sendMessage(TradeMe.getMessage("Prefix") + TradeMe.getMessage(at, "Limit", "[amount]", OfferedExp));
+		trade.getP1().sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Limit", "[amount]", OfferedExp));
 	    } else {
 		trade.addOffer(at, amount);
 	    }
@@ -198,8 +199,8 @@ public class Exp implements TradeModeInterface {
 		trade.takeFromOffer(at, amount);
 	    }
 
-	String msg = TradeMe.getMessage(at, "ChangedOffer", "[playername]", trade.getP1().getName(), "[amount]", OfferedExp);
-	ActionBar.send(trade.getP2(), msg);
+	String msg = plugin.getMessage(at, "ChangedOffer", "[playername]", trade.getP1().getName(), "[amount]", OfferedExp);
+	plugin.getAb().send(trade.getP2(), msg);
     }
 
     /* 
@@ -215,7 +216,7 @@ public class Exp implements TradeModeInterface {
 	double expToNewLevel = EXPlevelToExp(newSourceLevel);
 	double leftSourceExp = Sourceleftexp - expToNewLevel;
 
-	String taxes = TradeMe.getUtil().GetTaxesString(at, trade.getOffer(at));
+	String taxes = plugin.getUtil().GetTaxesString(at, trade.getOffer(at));
 
 	double totalP2Exp = 0;
 	int levelP2 = 0;
@@ -223,16 +224,16 @@ public class Exp implements TradeModeInterface {
 	totalP2Exp = getPlayerExperience(trade.getP2());
 	levelP2 = trade.getP2().getLevel();
 
-	double Targetleftexp = totalP2Exp + (trade.getOffer(at) - TradeMe.getUtil().CheckFixedTaxes(at, trade.getOffer(at))
-	    - TradeMe.getUtil().CheckPercentageTaxes(at, trade.getOffer(at)));
+	double Targetleftexp = totalP2Exp + (trade.getOffer(at) - plugin.getUtil().CheckFixedTaxes(at, trade.getOffer(at))
+	    - plugin.getUtil().CheckPercentageTaxes(at, trade.getOffer(at)));
 
 	int newTargetLevel = EXPLevelFromExp(Targetleftexp, trade.getP1().getLevel() + levelP2);
 	double expToNewTargetLevel = EXPlevelToExp(newTargetLevel);
 	double leftTargetExp = Targetleftexp - expToNewTargetLevel;
 
-	ItemStack item = TradeMe.getUtil().makeSlotItem(OfferedTradeButton, TradeMe.getMessage(at, "OfferedButton.Name",
+	ItemStack item = plugin.getUtil().makeSlotItem(OfferedTradeButton, plugin.getMessage(at, "OfferedButton.Name",
 	    "[player]", trade.getP1Name()),
-	    TradeMe.getMessageListAsString(at, "OfferedButton.Lore",
+	    plugin.getMessageListAsString(at, "OfferedButton.Lore",
 		"[player]", trade.getP1().getName(),
 		"[amount]", trade.getOffer(at),
 		"[taxes]", taxes,
@@ -252,13 +253,13 @@ public class Exp implements TradeModeInterface {
 	Player p1 = trade.getP1Trade().getP1();
 	Player p2 = trade.getP2Trade().getP1();
 	if (getPlayerExperience(p1) < trade.getP1Trade().getOffer(at)) {
-	    p1.sendMessage(TradeMe.getMessage("Prefix") + TradeMe.getMessage(at, "Error", "[playername]", p1.getName()));
-	    p2.sendMessage(TradeMe.getMessage("Prefix") + TradeMe.getMessage(at, "Error", "[playername]", p1.getName()));
+	    p1.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Error", "[playername]", p1.getName()));
+	    p2.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Error", "[playername]", p1.getName()));
 	    return false;
 	}
 	if (getPlayerExperience(p2) < trade.getP2Trade().getOffer(at)) {
-	    p1.sendMessage(TradeMe.getMessage("Prefix") + TradeMe.getMessage(at, "Error", "[playername]", p2.getName()));
-	    p2.sendMessage(TradeMe.getMessage("Prefix") + TradeMe.getMessage(at, "Error", "[playername]", p2.getName()));
+	    p1.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Error", "[playername]", p2.getName()));
+	    p2.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Error", "[playername]", p2.getName()));
 	    return false;
 	}
 	return true;
@@ -277,12 +278,12 @@ public class Exp implements TradeModeInterface {
 	double amount = trade.getOffer(at);
 
 	withdraw(source, amount);
-	amount = TradeMe.getUtil().CheckTaxes(at, amount);
+	amount = plugin.getUtil().CheckTaxes(at, amount);
 
 	trade.setOffer(at, amount);
 	deposite(target, amount);
 	if (target != null)
-	    target.sendMessage(TradeMe.getMessage("Prefix") + TradeMe.getMessage(at, "Got", "[amount]", trade.getOffer(at)));
+	    target.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Got", "[amount]", trade.getOffer(at)));
 	return true;
 
     }
@@ -294,10 +295,10 @@ public class Exp implements TradeModeInterface {
     public void getResults(TradeInfo trade, TradeResults TR) {
 	if (trade.getOffer(at) <= 0)
 	    return;
-	double amount = TradeMe.getUtil().CheckTaxes(at, trade.getOffer(at));
+	double amount = plugin.getUtil().CheckTaxes(at, trade.getOffer(at));
 	TR.add(at, amount);
     }
-    
+
     /* 
      * This event will be fired when player click second time on same trade mode
      * Can be used to switch in example between skills for McMMO exp trade
@@ -308,7 +309,7 @@ public class Exp implements TradeModeInterface {
 	return null;
     }
 
-    private static void withdraw(Player player, double exp) {
+    private void withdraw(Player player, double exp) {
 	if (player == null)
 	    return;
 	double giverExp = getPlayerExperience(player) - exp;
@@ -320,7 +321,7 @@ public class Exp implements TradeModeInterface {
 	player.giveExp((int) giverExp);
     }
 
-    private static void deposite(Player player, double exp) {
+    private void deposite(Player player, double exp) {
 	if (player == null)
 	    return;
 	double giverExp = getPlayerExperience(player) + exp;
@@ -330,15 +331,15 @@ public class Exp implements TradeModeInterface {
 	player.giveExp((int) giverExp);
     }
 
-    private static double getPlayerExperience(Player player) {
+    private double getPlayerExperience(Player player) {
 	if (player == null)
 	    return 0;
 	double bukkitExp = (EXPlevelToExp(player.getLevel()) + Math.round(deltaLevelToExp(player.getLevel()) * player.getExp()));
 	return bukkitExp;
     }
 
-    private static double EXPlevelToExp(double newSourceLevel) {
-	if (ActionBar.GetVersion() < 1800) {
+    private double EXPlevelToExp(double newSourceLevel) {
+	if (plugin.getAb().GetVersion() < 1800) {
 	    if (newSourceLevel <= 15) {
 		return 17 * newSourceLevel;
 	    } else if (newSourceLevel <= 30) {
@@ -356,8 +357,8 @@ public class Exp implements TradeModeInterface {
 	}
     }
 
-    private static int deltaLevelToExp(int level) {
-	if (ActionBar.GetVersion() < 1800) {
+    private int deltaLevelToExp(int level) {
+	if (plugin.getAb().GetVersion() < 1800) {
 	    if (level <= 15) {
 		return 17;
 	    } else if (level <= 30) {
@@ -375,7 +376,7 @@ public class Exp implements TradeModeInterface {
 	}
     }
 
-    private static int EXPLevelFromExp(double sourceleftexp, double d) {
+    private int EXPLevelFromExp(double sourceleftexp, double d) {
 	for (int i = 1; i <= d + 1; i++) {
 	    double levelexp = EXPlevelToExp(i);
 	    if (levelexp > sourceleftexp)

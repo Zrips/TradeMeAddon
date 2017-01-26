@@ -17,10 +17,10 @@ public class TradeMeAddon extends JavaPlugin {
 	// Last variable defines if trade will have more than one possible trade variable, like McMMO have different skills
 	TradeAction tradeAction = new TradeAction("ExpAlternative", AmountClickAction.Amounts, false);
 	
-	TradeMe.addNewTradeMode(tradeAction, new Exp("ExpAlternative"));
+	TradeMe.getInstance().addNewTradeMode(tradeAction, new Exp(TradeMe.getInstance(), "ExpAlternative"));
 	
 	// Reloads TradeMe config files to implement new trade mode
-	TradeMe.getCM().reload();
+	TradeMe.getInstance().getCM().reload();
 	Bukkit.getConsoleSender().sendMessage(ChatColor.YELLOW + "[TradeMeAddon] " + ChatColor.GOLD + "Injected alternative Exp trade mode");
     }
 
