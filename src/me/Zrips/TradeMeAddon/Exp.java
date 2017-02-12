@@ -41,6 +41,7 @@ public class Exp implements TradeModeInterface {
     @Override
     public HashMap<String, Object> getLocale() {
 	HashMap<String, Object> map = new HashMap<String, Object>();
+	// Thies should retain same path format
 	map.put("Button.Name", "&2Exp increment by &6[amount]");
 	map.put("Button.Lore",
 	    Arrays.asList("&eLeft click to add",
@@ -60,6 +61,8 @@ public class Exp implements TradeModeInterface {
 	    "&eCurent exp offer: &6[amount] [taxes]",
 	    "&e[player] will be left with &6[sourcelevel] &elevels and &6[sourceexp] &eexp",
 	    "&eYou will be at &6[targetlevel] &eand have &6[targetexp] &eexp"));
+	
+	// Thies can have custom path names
 	map.put("Error", "&e[playername] doesn't have enough exp!");
 	map.put("Limit", "&eYou dont have enough exp! Amount was set to maximum you can trade: &6[amount]");
 	map.put("ChangedOffer", "&6[playername] &ehas changed their exp offer to: &6[amount]");
@@ -143,6 +146,7 @@ public class Exp implements TradeModeInterface {
 	if (trade.getButtonList().size() > 4)
 	    mid = "\n" + plugin.getMessage("MiddleMouse");
 
+	// Main trade mode button
 	if (trade.Size == TradeSize.REGULAR)
 	    GuiInv.setItem(slot, plugin.getUtil().makeSlotItem(ob, plugin.getMessage(at, "ToggleButton.Name"),
 		plugin.getMessageListAsString(at, "ToggleButton.Lore",
@@ -155,6 +159,7 @@ public class Exp implements TradeModeInterface {
 	if (!trade.getAction().equalsIgnoreCase(at))
 	    return GuiInv;
 
+	// Four buttons for value changes
 	for (int i = 45; i < 49; i++) {
 	    GuiInv.setItem(i, plugin.getUtil().makeSlotItem(AmountButtons.get(i - 45),
 		plugin.getMessage(at, "Button.Name",
