@@ -183,7 +183,7 @@ public class Exp implements TradeModeInterface {
      */
     @Override
     public void Change(TradeInfo trade, int slot, ClickType button) {
-	Double amount = amounts.get(slot);
+	Double amount = amounts.getAmount(slot);
 	int PlayerExp = (int) getPlayerExperience(trade.getP1());
 	double OfferedExp = trade.getOffer(at);
 
