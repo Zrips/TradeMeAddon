@@ -19,6 +19,7 @@ import me.Zrips.TradeMe.Containers.TradeMap;
 import me.Zrips.TradeMe.Containers.TradeModeInterface;
 import me.Zrips.TradeMe.Containers.TradeResults;
 import me.Zrips.TradeMe.Containers.TradeSize;
+import me.Zrips.TradeMe.Utils.VersionChecker.Version;
 
 public class Exp implements TradeModeInterface {
 
@@ -344,44 +345,52 @@ public class Exp implements TradeModeInterface {
     }
 
     private double EXPlevelToExp(double newSourceLevel) {
-	if (plugin.getAb().GetVersion() < 1800) {
+	double exp = 0d;
+	if (plugin.getVersionChecker().getVersion().isLower(Version.v1_8_R1)) {
 	    if (newSourceLevel <= 15) {
-		return 17 * newSourceLevel;
+		exp = 17 * newSourceLevel;
 	    } else if (newSourceLevel <= 30) {
-		return (3 * newSourceLevel * newSourceLevel / 2) - (59 * newSourceLevel / 2) + 360;
+		exp = (3 * newSourceLevel * newSourceLevel / 2) - (59 * newSourceLevel / 2) + 360;
 	    } else {
-		return (7 * newSourceLevel * newSourceLevel / 2) - (303 * newSourceLevel / 2) + 2220;
+		exp = (7 * newSourceLevel * newSourceLevel / 2) - (303 * newSourceLevel / 2) + 2220;
 	    }
 	}
 	if (newSourceLevel <= 15) {
-	    return newSourceLevel * newSourceLevel + 6 * newSourceLevel;
+	    exp = newSourceLevel * newSourceLevel + 6 * newSourceLevel;
 	} else if (newSourceLevel <= 30) {
-	    return (int) (2.5 * newSourceLevel * newSourceLevel - 40.5 * newSourceLevel + 360);
+	    exp = 2.5 * newSourceLevel * newSourceLevel - 40.5 * newSourceLevel + 360;
 	} else {
-	    return (int) (4.5 * newSourceLevel * newSourceLevel - 162.5 * newSourceLevel + 2220);
+	    exp = 4.5 * newSourceLevel * newSourceLevel - 162.5 * newSourceLevel + 2220;
 	}
+
+	return exp > Integer.MAX_VALUE ? Integer.MAX_VALUE : exp;
     }
 
     private int deltaLevelToExp(int level) {
-	if (plugin.getAb().GetVersion() < 1800) {
+	double exp = 0d;
+	if (plugin.getVersionChecker().getVersion().isLower(Version.v1_8_R1)) {
 	    if (level <= 15) {
-		return 17;
+		exp = 17D;
 	    } else if (level <= 30) {
-		return 3 * level - 31;
+		exp = 3D * level - 31;
 	    } else {
-		return 7 * level - 155;
+		exp = 7D * level - 155;
 	    }
 	}
 	if (level <= 15) {
-	    return 2 * level + 7;
+	    exp = 2D * level + 7;
 	} else if (level <= 30) {
-	    return 5 * level - 38;
+	    exp = 5D * level - 38;
 	} else {
-	    return 9 * level - 158;
+	    exp = 9D * level - 158;
 	}
+
+	return exp > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) exp;
     }
 
     private int EXPLevelFromExp(double sourceleftexp, double d) {
+	if (d > 21863)
+	    d = 21863;
 	for (int i = 1; i <= d + 1; i++) {
 	    double levelexp = EXPlevelToExp(i);
 	    if (levelexp > sourceleftexp)
