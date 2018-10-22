@@ -11,22 +11,28 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import me.Zrips.TradeMe.Debug;
+import com.Zrips.CMIGUI.CMIGui;
+import com.Zrips.CMIGUI.CMIGuiButton;
+import com.Zrips.CMIGUI.GUIManager.GUIClickType;
+import com.Zrips.CMILib.ActionBarTitleMessages;
+import com.Zrips.CMILib.ItemManager.CMIMaterial;
+
 import me.Zrips.TradeMe.TradeMe;
 import me.Zrips.TradeMe.Containers.Amounts;
 import me.Zrips.TradeMe.Containers.OfferButtons;
-import me.Zrips.TradeMe.Containers.TradeInfo;
 import me.Zrips.TradeMe.Containers.TradeMap;
 import me.Zrips.TradeMe.Containers.TradeModeInterface;
+import me.Zrips.TradeMe.Containers.TradeOffer;
 import me.Zrips.TradeMe.Containers.TradeResults;
 import me.Zrips.TradeMe.Containers.TradeSize;
+import me.Zrips.TradeMe.Locale.LC;
 
 public class Money implements TradeModeInterface {
 
     private String at = "Money";
 
-    List<ItemStack> AmountButtons = new ArrayList<ItemStack>();
-    ItemStack OfferedTradeButton = new ItemStack(Material.STONE);
+    static List<ItemStack> AmountButtons = new ArrayList<ItemStack>();
+    ItemStack OfferedTradeButton = CMIMaterial.GOLD_INGOT.newItemStack();
     OfferButtons offerButton = new OfferButtons();
     Amounts amounts = new Amounts(1, 100, 10000, 1000000);
     private TradeMe plugin;
@@ -58,6 +64,7 @@ public class Money implements TradeModeInterface {
 	map.put("Got", "&eYou have received &6[amount] &emoney");
 	map.put("CantWidraw", "&cCan't widraw money from player! ([playername])");
 	map.put("ChangedOffer", "&6[playername] &ehas changed their money offer to: &6[amount]");
+	map.put("ChangedOfferTitle", "&8Offered &0[amount] &8money");
 
 	map.put("log", "&e[amount] &7Money");
 	return map;
@@ -70,28 +77,27 @@ public class Money implements TradeModeInterface {
 
     @Override
     public List<ItemStack> getAmountButtons() {
-	AmountButtons.add(new ItemStack(Material.GOLD_NUGGET, 1, (byte) 0));
-	AmountButtons.add(new ItemStack(Material.GOLD_INGOT, 1, (byte) 0));
-	AmountButtons.add(new ItemStack(Material.GOLD_BLOCK, 1, (byte) 0));
-	AmountButtons.add(new ItemStack(Material.DIAMOND, 1, (byte) 0));
+	AmountButtons.add(CMIMaterial.GOLD_NUGGET.newItemStack());
+	AmountButtons.add(CMIMaterial.GOLD_INGOT.newItemStack());
+	AmountButtons.add(CMIMaterial.GOLD_BLOCK.newItemStack());
+	AmountButtons.add(CMIMaterial.DIAMOND.newItemStack());
 	return AmountButtons;
     }
 
     @Override
     public ItemStack getOfferedTradeButton() {
-	OfferedTradeButton = new ItemStack(Material.GOLD_INGOT, 1, (byte) 0);
 	return OfferedTradeButton;
     }
 
     @Override
     public OfferButtons getOfferButtons() {
-	offerButton.addOfferOff(new ItemStack(Material.ENDER_PEARL, 1, (byte) 0));
-	offerButton.addOfferOn(new ItemStack(Material.EYE_OF_ENDER, 1, (byte) 0));
+	offerButton.addOfferOff(CMIMaterial.ENDER_PEARL.newItemStack());
+	offerButton.addOfferOn(CMIMaterial.ENDER_EYE.newItemStack());
 	return offerButton;
     }
 
     @Override
-    public void setTrade(TradeInfo trade, int i) {
+    public void setTrade(TradeOffer trade, int i) {
 	if (plugin.getEconomy().useVaultEcon()) {
 	    trade.setP1Money(plugin.getEconomy().getBalance(trade.getP1()));
 	    trade.setP2Money(plugin.getEconomy().getBalance(trade.getP2()));
@@ -100,7 +106,7 @@ public class Money implements TradeModeInterface {
     }
 
     @Override
-    public Inventory Buttons(TradeInfo trade, Inventory GuiInv, int slot) {
+    public CMIGui Buttons(final TradeOffer trade, CMIGui GuiInv, final int slot) {
 
 	String firstBalance = plugin.getUtil().TrA((long) trade.getP1Money());
 	String firstOffer = plugin.getUtil().TrA(trade.getOffer(at));
@@ -113,10 +119,15 @@ public class Money implements TradeModeInterface {
 	if (trade.getButtonList().size() > 4)
 	    mid = "\n" + plugin.getMessage("MiddleMouse");
 	if (trade.Size == TradeSize.REGULAR)
-	    GuiInv.setItem(slot, plugin.getUtil().makeSlotItem(ob, plugin.getMessage(at, "ToggleButton.Name"),
+	    GuiInv.updateButton(new CMIGuiButton(slot, plugin.getUtil().makeSlotItem(ob, plugin.getMessage(at, "ToggleButton.Name"),
 		plugin.getMessageListAsString(at, "ToggleButton.Lore",
 		    "[amount]", plugin.getUtil().TrA(trade.getOffer(at)),
-		    "[taxes]", taxes) + mid));
+		    "[taxes]", taxes) + mid)) {
+		@Override
+		public void click(GUIClickType click) {
+		    trade.toogleMode(at, click, slot);
+		}
+	    });
 
 	if (trade.getAction() == at) {
 
@@ -125,15 +136,23 @@ public class Money implements TradeModeInterface {
 		"[offer]", firstOffer,
 		"[taxes]", taxes);
 	    for (int i = 45; i < 49; i++) {
-		GuiInv.setItem(i, plugin.getUtil().makeSlotItem(AmountButtons.get(i - 45),
-		    plugin.getMessage(at, "Button.Name", "[amount]", amounts.getAmount(i - 45)), lore));
+		TradeMe.getInstance().d(AmountButtons.get(i - 45).getType());
+		GuiInv.updateButton(new CMIGuiButton(i, plugin.getUtil().makeSlotItem(AmountButtons.get(i - 45),
+		    plugin.getMessage(at, "Button.Name", "[amount]", plugin.getUtil().TrA(amounts.getAmount(i - 45))), lore)) {
+
+		    @Override
+		    public void click(GUIClickType click) {
+			trade.amountClick(at, click, this.getSlot() - 45, slot);
+		    }
+		});
 	    }
 	}
+
 	return GuiInv;
     }
 
     @Override
-    public void Change(TradeInfo trade, int slot, ClickType button) {
+    public void Change(TradeOffer trade, int slot, GUIClickType button) {
 	Double amount = amounts.getAmount(slot);
 	double PlayerMoney = trade.getP1Money();
 	double targetMoney = trade.getP2Money();
@@ -145,15 +164,15 @@ public class Money implements TradeModeInterface {
 	if (button.isLeftClick()) {
 	    if (plugin.EssPresent && OfferedMoney + amount + targetMoney >= 10000000000000D) {
 		amount = 10000000000000D - OfferedMoney - targetMoney;
-		trade.getP1().sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "hardLimit", "[playername]", trade.getP2Name()));
+		trade.getP1().sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "hardLimit", "[playername]", trade.getP2Name()));
 	    }
 
 	    if (OfferedMoney + amount > PlayerMoney) {
 		if (PlayerMoney < 0)
 		    trade.setOffer(at, 0);
 		else
-		    trade.setOffer(at, PlayerMoney);
-		trade.getP1().sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Limit", "[amount]", plugin.getUtil().TrA(trade.getOffer(at))));
+		    trade.setOffer(at, Math.floor(PlayerMoney));
+		trade.getP1().sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "Limit", "[amount]", plugin.getUtil().TrA(trade.getOffer(at))));
 	    } else {
 		trade.addOffer(at, amount);
 	    }
@@ -167,11 +186,14 @@ public class Money implements TradeModeInterface {
 
 	String msg = plugin.getMessage(at, "ChangedOffer", "[playername]", trade.getP1Name(), "[amount]", plugin.getUtil().TrA(trade.getOffer(at)));
 
-	plugin.getAb().send(trade.getP2(), msg);
+	ActionBarTitleMessages.send(trade.getP2(), msg);
+
+	TradeMe.getInstance().getUtil().updateInventoryTitle(trade.getP2(), plugin.getMessage(at, "ChangedOfferTitle", "[playername]", trade.getP1().getName(), "[amount]", trade.getOffer(at)), 1000L);
+
     }
 
     @Override
-    public ItemStack getOfferedItem(TradeInfo trade) {
+    public ItemStack getOfferedItem(TradeOffer trade) {
 	if (trade.getOffer(at) > 0) {
 	    String taxes = plugin.getUtil().GetTaxesString(at, trade.getOffer(at));
 	    ItemStack item = plugin.getUtil().makeSlotItem(OfferedTradeButton,
@@ -190,69 +212,77 @@ public class Money implements TradeModeInterface {
 	Player p1 = trade.getP1Trade().getP1();
 	Player p2 = trade.getP2Trade().getP1();
 
+	if (check(p1, p2, trade.getP1Trade().getOffer(at), trade.getP2Trade().getOffer(at)))
+	    return true;
+	return false;
+    }
+
+    private boolean check(Player p1, Player p2, Double offer1, Double offer2) {
 	if (plugin.getEconomy().enabled()) {
 	    Double balance = plugin.getEconomy().getBalance(p1);
-	    if (balance < 0 && balance + trade.getP2Trade().getOffer(at) < 0 && !plugin.EssPresent) {
-		p1.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "InLoanYou", "[playername]", p2.getName()));
-		p2.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "InLoanTarget", "[playername]", p1.getName(), "[amount]",
-		    plugin.getUtil().TrA(-balance)));
-		return false;
-	    }
-	    if (balance > 0 && balance < trade.getP1Trade().getOffer(at)) {
-		p1.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Error", "[playername]", p1.getName()));
-		p2.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Error", "[playername]", p1.getName()));
+//	    if (balance < 0 && balance + offer2 < 0 && !plugin.EssPresent) {
+//		p1.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "InLoanYou", "[playername]", p2.getName()));
+//		p2.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "InLoanTarget", "[playername]", p1.getName(), "[amount]",
+//		    plugin.getUtil().TrA(-balance)));
+//		return false;
+//	    }
+	    if (balance < offer1) {
+		p1.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "Error", "[playername]", p1.getName()));
+		p2.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "Error", "[playername]", p1.getName()));
 		return false;
 	    }
 
 	    balance = plugin.getEconomy().getBalance(p2);
-	    if (balance < 0 && balance + trade.getP1Trade().getOffer(at) < 0 && !plugin.EssPresent) {
-		p1.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "InLoanYou", "[playername]", p1.getName()));
-		p2.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "InLoanTarget", "[playername]", p2.getName(), "[amount]",
-		    plugin.getUtil().TrA(-balance)));
+//	    if (balance < 0 && balance + offer1 < 0 && !plugin.EssPresent) {
+//		p1.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "InLoanYou", "[playername]", p1.getName()));
+//		p2.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "InLoanTarget", "[playername]", p2.getName(), "[amount]",
+//		    plugin.getUtil().TrA(-balance)));
+//		return false;
+//	    }
+	    if (balance < offer2) {
+		p1.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "Error", "[playername]", p2.getName()));
+		p2.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "Error", "[playername]", p2.getName()));
 		return false;
 	    }
-	    if (balance > 0 && balance < trade.getP2Trade().getOffer(at)) {
-		p1.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Error", "[playername]", p2.getName()));
-		p2.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Error", "[playername]", p2.getName()));
-		return false;
-	    }
-	}
-
-	return true;
-    }
-
-    @Override
-    public boolean finish(TradeInfo trade) {
-	Player target = trade.getP2();
-	Player source = trade.getP1();
-	if (source == null || target == null)
-	    return false;
-
-	if (trade.getOffer(at) > 0) {
-
-	    double amount = trade.getOffer(at);
-
-	    if (!plugin.getEconomy().has(source, amount))
-		return false;
-
-	    boolean done = false;
-	    done = plugin.getEconomy().withdrawMoney(source, amount);
-	    if (done) {
-		amount = plugin.getUtil().CheckTaxes(at, amount);
-		trade.setOffer(at, amount);
-		plugin.getEconomy().depositeMoney(target, amount);
-		target.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Got", "[amount]", plugin.getUtil().TrA(trade.getOffer(at))));
-		return true;
-	    }
-
-	    target.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "CantWidraw", "[playername]", source.getName()));
-
+	    return true;
 	}
 	return false;
     }
 
     @Override
-    public void getResults(TradeInfo trade, TradeResults TR) {
+    public boolean finish(TradeOffer trade) {
+	Player target = trade.getP2();
+	Player source = trade.getP1();
+
+	if (!check(source, target, trade.getOffer(this.at), 0D))
+	    return false;
+	if (trade.getOffer(this.at) <= 0.0D)
+	    return true;
+
+	double amount = trade.getOffer(this.at);
+	if (amount < 0)
+	    return false;
+	if (source != null) {
+	    if (!plugin.getEconomy().has(source, amount))
+		return false;
+	    boolean done = plugin.getEconomy().withdrawMoney(source, amount);
+	    if (!done)
+		return false;
+	}
+	double tamount = plugin.getUtil().CheckTaxes(this.at, amount);
+	if (tamount < 0) {
+	    return false;
+	}
+	trade.setOffer(this.at, tamount);
+	if (target != null) {
+	    plugin.getEconomy().depositeMoney(target, tamount);
+	    target.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "Got", "[amount]", plugin.getUtil().TrA(trade.getOffer(at))));
+	}
+	return true;
+    }
+
+    @Override
+    public void getResults(TradeOffer trade, TradeResults TR) {
 	if (trade.getOffer(at) > 0) {
 	    double amount = trade.getOffer(at);
 	    amount = amount - plugin.getUtil().CheckFixedTaxes(at, amount);
@@ -262,7 +292,7 @@ public class Money implements TradeModeInterface {
     }
 
     @Override
-    public String Switch(TradeInfo trade, ClickType button) {
+    public String Switch(TradeOffer trade, GUIClickType button) {
 	return null;
     }
 }

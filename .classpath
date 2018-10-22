@@ -2,7 +2,7 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="C:/Users/Arte/Desktop/TradeMe/lib/spigot-1.11.2.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Arte/Desktop/TradeMe/lib/TradeMe5.0.0.6.jar"/>
+	<classpathentry kind="lib" path="E:/Plugins/CheckMyInventory/lib/spigot-1.13.1.jar"/>
+	<classpathentry kind="lib" path="E:/Plugins/TradeMe/TradeMe6.0.0.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

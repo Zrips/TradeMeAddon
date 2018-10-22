@@ -7,19 +7,24 @@ import java.util.List;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.ClickType;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+
+import com.Zrips.CMIGUI.CMIGui;
+import com.Zrips.CMIGUI.CMIGuiButton;
+import com.Zrips.CMIGUI.GUIManager.GUIClickType;
+import com.Zrips.CMILib.ActionBarTitleMessages;
+import com.Zrips.CMILib.ItemManager.CMIMaterial;
+import com.Zrips.CMILib.VersionChecker.Version;
 
 import me.Zrips.TradeMe.TradeMe;
 import me.Zrips.TradeMe.Containers.Amounts;
 import me.Zrips.TradeMe.Containers.OfferButtons;
-import me.Zrips.TradeMe.Containers.TradeInfo;
 import me.Zrips.TradeMe.Containers.TradeMap;
 import me.Zrips.TradeMe.Containers.TradeModeInterface;
+import me.Zrips.TradeMe.Containers.TradeOffer;
 import me.Zrips.TradeMe.Containers.TradeResults;
 import me.Zrips.TradeMe.Containers.TradeSize;
-import me.Zrips.TradeMe.Utils.VersionChecker.Version;
+import me.Zrips.TradeMe.Locale.LC;
 
 public class Exp implements TradeModeInterface {
 
@@ -42,14 +47,13 @@ public class Exp implements TradeModeInterface {
     @Override
     public HashMap<String, Object> getLocale() {
 	HashMap<String, Object> map = new HashMap<String, Object>();
-	// Thies should retain same path format
 	map.put("Button.Name", "&2Exp increment by &6[amount]");
 	map.put("Button.Lore",
 	    Arrays.asList("&eLeft click to add",
 		"&eRight click to take",
 		"&eHold shift to increase 10 times",
 		"&eMaximum available: &6[balance]",
-		"&eCurrent J offer: &6[offer] [taxes]",
+		"&eCurrent exp offer: &6[offer] [taxes]",
 		"&eYou will be left with &6[sourcelevel] &elevels and &6[sourceexp] &eexp",
 		"&eTarget player will be at &6[targetlevel] &eand have &6[targetexp] &eexp"));
 	map.put("ToggleButton.Name", "&2Toggle to exp offer");
@@ -62,11 +66,10 @@ public class Exp implements TradeModeInterface {
 	    "&eCurent exp offer: &6[amount] [taxes]",
 	    "&e[player] will be left with &6[sourcelevel] &elevels and &6[sourceexp] &eexp",
 	    "&eYou will be at &6[targetlevel] &eand have &6[targetexp] &eexp"));
-	
-	// Thies can have custom path names
 	map.put("Error", "&e[playername] doesn't have enough exp!");
 	map.put("Limit", "&eYou dont have enough exp! Amount was set to maximum you can trade: &6[amount]");
 	map.put("ChangedOffer", "&6[playername] &ehas changed their exp offer to: &6[amount]");
+	map.put("ChangedOfferTitle", "&8Offered &0[amount] &8exp");
 	map.put("Got", "&eYou have received &6[amount] &eexp");
 
 	map.put("log", "&e[amount] &7Exp");
@@ -88,10 +91,10 @@ public class Exp implements TradeModeInterface {
      */
     @Override
     public List<ItemStack> getAmountButtons() {
-	AmountButtons.add(new ItemStack(Material.BUCKET, 1, (byte) 0));
-	AmountButtons.add(new ItemStack(Material.MILK_BUCKET, 1, (byte) 0));
-	AmountButtons.add(new ItemStack(Material.WATER_BUCKET, 1, (byte) 0));
-	AmountButtons.add(new ItemStack(Material.LAVA_BUCKET, 1, (byte) 0));
+	AmountButtons.add(CMIMaterial.BUCKET.newItemStack());
+	AmountButtons.add(CMIMaterial.MILK_BUCKET.newItemStack());
+	AmountButtons.add(CMIMaterial.WATER_BUCKET.newItemStack());
+	AmountButtons.add(CMIMaterial.LAVA_BUCKET.newItemStack());
 	return AmountButtons;
     }
 
@@ -101,7 +104,7 @@ public class Exp implements TradeModeInterface {
      */
     @Override
     public ItemStack getOfferedTradeButton() {
-	OfferedTradeButton = new ItemStack(Material.EXP_BOTTLE, 1, (byte) 0);
+	OfferedTradeButton = CMIMaterial.EXPERIENCE_BOTTLE.newItemStack();
 	return OfferedTradeButton;
     }
 
@@ -111,8 +114,8 @@ public class Exp implements TradeModeInterface {
      */
     @Override
     public OfferButtons getOfferButtons() {
-	offerButton.addOfferOff(new ItemStack(Material.GLASS_BOTTLE, 1, (byte) 0));
-	offerButton.addOfferOn(new ItemStack(Material.EXP_BOTTLE, 1, (byte) 0));
+	offerButton.addOfferOff(CMIMaterial.GLASS_BOTTLE.newItemStack());
+	offerButton.addOfferOn(CMIMaterial.EXPERIENCE_BOTTLE.newItemStack());
 	return offerButton;
     }
 
@@ -121,7 +124,7 @@ public class Exp implements TradeModeInterface {
      * If not set then player will not have option to trade with that trade mode
      */
     @Override
-    public void setTrade(TradeInfo trade, int i) {
+    public void setTrade(TradeOffer trade, int i) {
 	trade.getButtonList().add(trade.getPosibleButtons().get(i));
     }
 
@@ -129,7 +132,7 @@ public class Exp implements TradeModeInterface {
      * Main buttons update event when player changes trade mode or changes trade value
      */
     @Override
-    public Inventory Buttons(TradeInfo trade, Inventory GuiInv, int slot) {
+    public CMIGui Buttons(final TradeOffer trade, CMIGui GuiInv, final int slot) {
 
 	double offerAmount = trade.getOffer(at);
 	ItemStack ob = offerAmount == 0 ? offerButton.getOfferOff() : offerButton.getOfferOn();
@@ -147,24 +150,28 @@ public class Exp implements TradeModeInterface {
 	if (trade.getButtonList().size() > 4)
 	    mid = "\n" + plugin.getMessage("MiddleMouse");
 
-	// Main trade mode button
-	if (trade.Size == TradeSize.REGULAR)
-	    GuiInv.setItem(slot, plugin.getUtil().makeSlotItem(ob, plugin.getMessage(at, "ToggleButton.Name"),
+	if (trade.Size == TradeSize.REGULAR) {
+	    GuiInv.updateButton(new CMIGuiButton(slot, plugin.getUtil().makeSlotItem(ob, plugin.getMessage(at, "ToggleButton.Name"),
 		plugin.getMessageListAsString(at, "ToggleButton.Lore",
 		    "[amount]", offerAmount,
 		    "[taxes]", taxes,
 		    "[sourcelevel]", newSourceLevel,
 		    "[sourceexp]", leftSourceExp,
 		    "[targetlevel]", newTargetLevel,
-		    "[targetexp]", leftTargetExp) + mid));
+		    "[targetexp]", leftTargetExp) + mid)) {
+		@Override
+		public void click(GUIClickType click) {
+		    trade.toogleMode(at, click, slot);
+		}
+	    });
+	}
 	if (!trade.getAction().equalsIgnoreCase(at))
 	    return GuiInv;
 
-	// Four buttons for value changes
 	for (int i = 45; i < 49; i++) {
-	    GuiInv.setItem(i, plugin.getUtil().makeSlotItem(AmountButtons.get(i - 45),
+	    GuiInv.updateButton(new CMIGuiButton(i, plugin.getUtil().makeSlotItem(AmountButtons.get(i - 45),
 		plugin.getMessage(at, "Button.Name",
-		    "[amount]", plugin.getUtil().TrA(amounts.get(i - 45))),
+		    "[amount]", plugin.getUtil().TrA(amounts.getAmount(i - 45))),
 		plugin.getMessageListAsString(at, "Button.Lore",
 		    "[balance]", plugin.getUtil().TrA(getPlayerExperience(trade.getP1())),
 		    "[offer]", plugin.getUtil().TrA(offerAmount),
@@ -172,7 +179,13 @@ public class Exp implements TradeModeInterface {
 		    "[sourcelevel]", newSourceLevel,
 		    "[sourceexp]", leftSourceExp,
 		    "[targetlevel]", newTargetLevel,
-		    "[targetexp]", leftTargetExp)));
+		    "[targetexp]", leftTargetExp))) {
+
+		@Override
+		public void click(GUIClickType click) {
+		    trade.amountClick(at, click, this.getSlot() - 45, slot);
+		}
+	    });
 	}
 
 	return GuiInv;
@@ -183,7 +196,7 @@ public class Exp implements TradeModeInterface {
      * Slot is value from 0 to 3
      */
     @Override
-    public void Change(TradeInfo trade, int slot, ClickType button) {
+    public void Change(TradeOffer trade, int slot, GUIClickType button) {
 	Double amount = amounts.getAmount(slot);
 	int PlayerExp = (int) getPlayerExperience(trade.getP1());
 	double OfferedExp = trade.getOffer(at);
@@ -194,7 +207,10 @@ public class Exp implements TradeModeInterface {
 	if (button.isLeftClick())
 	    if (OfferedExp + amount > PlayerExp) {
 		trade.setOffer(at, PlayerExp);
-		trade.getP1().sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Limit", "[amount]", OfferedExp));
+		trade.getP1().sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "Limit", "[amount]", OfferedExp));
+	    } else if (PlayerExp + OfferedExp + amount > Integer.MAX_VALUE) {
+		trade.setOffer(at, Integer.MAX_VALUE);
+		trade.getP1().sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "Limit", "[amount]", OfferedExp));
 	    } else {
 		trade.addOffer(at, amount);
 	    }
@@ -205,15 +221,17 @@ public class Exp implements TradeModeInterface {
 		trade.takeFromOffer(at, amount);
 	    }
 
-	String msg = plugin.getMessage(at, "ChangedOffer", "[playername]", trade.getP1().getName(), "[amount]", OfferedExp);
-	plugin.getAb().send(trade.getP2(), msg);
+	String msg = plugin.getMessage(at, "ChangedOffer", "[playername]", trade.getP1().getName(), "[amount]", trade.getOffer(at));
+	ActionBarTitleMessages.send(trade.getP2(), msg);
+
+	TradeMe.getInstance().getUtil().updateInventoryTitle(trade.getP2(), plugin.getMessage(at, "ChangedOfferTitle", "[playername]", trade.getP1().getName(), "[amount]", trade.getOffer(at)), 1000L);
     }
 
     /* 
      * Defines item for another player if trade offer changes
      */
     @Override
-    public ItemStack getOfferedItem(TradeInfo trade) {
+    public ItemStack getOfferedItem(TradeOffer trade) {
 	if (trade.getOffer(at) <= 0)
 	    return null;
 
@@ -258,14 +276,14 @@ public class Exp implements TradeModeInterface {
     public boolean isLegit(TradeMap trade) {
 	Player p1 = trade.getP1Trade().getP1();
 	Player p2 = trade.getP2Trade().getP1();
-	if (getPlayerExperience(p1) < trade.getP1Trade().getOffer(at)) {
-	    p1.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Error", "[playername]", p1.getName()));
-	    p2.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Error", "[playername]", p1.getName()));
+	if (trade.getP1Trade().getOffer(at) > 0 && getPlayerExperience(p1) < trade.getP1Trade().getOffer(at)) {
+	    p1.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "Error", "[playername]", p1.getName()));
+	    p2.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "Error", "[playername]", p1.getName()));
 	    return false;
 	}
-	if (getPlayerExperience(p2) < trade.getP2Trade().getOffer(at)) {
-	    p1.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Error", "[playername]", p2.getName()));
-	    p2.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Error", "[playername]", p2.getName()));
+	if (trade.getP2Trade().getOffer(at) > 0 && getPlayerExperience(p2) < trade.getP2Trade().getOffer(at)) {
+	    p1.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "Error", "[playername]", p2.getName()));
+	    p2.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "Error", "[playername]", p2.getName()));
 	    return false;
 	}
 	return true;
@@ -275,7 +293,7 @@ public class Exp implements TradeModeInterface {
      * Final action for this trade mode after trade is finally gets green light
      */
     @Override
-    public boolean finish(TradeInfo trade) {
+    public boolean finish(TradeOffer trade) {
 	Player target = trade.getP2();
 	Player source = trade.getP1();
 	if (trade.getOffer(at) <= 0)
@@ -289,7 +307,7 @@ public class Exp implements TradeModeInterface {
 	trade.setOffer(at, amount);
 	deposite(target, amount);
 	if (target != null)
-	    target.sendMessage(plugin.getMessage("Prefix") + plugin.getMessage(at, "Got", "[amount]", trade.getOffer(at)));
+	    target.sendMessage(plugin.getMsg(LC.info_prefix) + plugin.getMessage(at, "Got", "[amount]", trade.getOffer(at)));
 	return true;
 
     }
@@ -298,7 +316,7 @@ public class Exp implements TradeModeInterface {
      * Returns results of this trade mode 
      */
     @Override
-    public void getResults(TradeInfo trade, TradeResults TR) {
+    public void getResults(TradeOffer trade, TradeResults TR) {
 	if (trade.getOffer(at) <= 0)
 	    return;
 	double amount = plugin.getUtil().CheckTaxes(at, trade.getOffer(at));
@@ -311,7 +329,7 @@ public class Exp implements TradeModeInterface {
      * Should return new name of changed skill value
      */
     @Override
-    public String Switch(TradeInfo trade, ClickType button) {
+    public String Switch(TradeOffer trade, GUIClickType button) {
 	return null;
     }
 
@@ -331,6 +349,10 @@ public class Exp implements TradeModeInterface {
 	if (player == null)
 	    return;
 	double giverExp = getPlayerExperience(player) + exp;
+
+	if (giverExp > Integer.MAX_VALUE)
+	    giverExp = Integer.MAX_VALUE;
+
 	player.setLevel(0);
 	player.setExp(0);
 	player.setTotalExperience(0);
@@ -341,7 +363,7 @@ public class Exp implements TradeModeInterface {
 	if (player == null)
 	    return 0;
 	double bukkitExp = (EXPlevelToExp(player.getLevel()) + Math.round(deltaLevelToExp(player.getLevel()) * player.getExp()));
-	return bukkitExp;
+	return bukkitExp > Integer.MAX_VALUE ? Integer.MAX_VALUE : bukkitExp;
     }
 
     private double EXPlevelToExp(double newSourceLevel) {
@@ -354,13 +376,14 @@ public class Exp implements TradeModeInterface {
 	    } else {
 		exp = (7 * newSourceLevel * newSourceLevel / 2) - (303 * newSourceLevel / 2) + 2220;
 	    }
-	}
-	if (newSourceLevel <= 15) {
-	    exp = newSourceLevel * newSourceLevel + 6 * newSourceLevel;
-	} else if (newSourceLevel <= 30) {
-	    exp = 2.5 * newSourceLevel * newSourceLevel - 40.5 * newSourceLevel + 360;
 	} else {
-	    exp = 4.5 * newSourceLevel * newSourceLevel - 162.5 * newSourceLevel + 2220;
+	    if (newSourceLevel <= 15) {
+		exp = newSourceLevel * newSourceLevel + 6 * newSourceLevel;
+	    } else if (newSourceLevel <= 30) {
+		exp = 2.5 * newSourceLevel * newSourceLevel - 40.5 * newSourceLevel + 360;
+	    } else {
+		exp = 4.5 * newSourceLevel * newSourceLevel - 162.5 * newSourceLevel + 2220;
+	    }
 	}
 
 	return exp > Integer.MAX_VALUE ? Integer.MAX_VALUE : exp;
@@ -376,13 +399,14 @@ public class Exp implements TradeModeInterface {
 	    } else {
 		exp = 7D * level - 155;
 	    }
-	}
-	if (level <= 15) {
-	    exp = 2D * level + 7;
-	} else if (level <= 30) {
-	    exp = 5D * level - 38;
 	} else {
-	    exp = 9D * level - 158;
+	    if (level <= 15) {
+		exp = 2D * level + 7;
+	    } else if (level <= 30) {
+		exp = 5D * level - 38;
+	    } else {
+		exp = 9D * level - 158;
+	    }
 	}
 
 	return exp > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) exp;

@@ -22,7 +22,7 @@ public class TradeMeAddon extends JavaPlugin {
 	TradeMe.getInstance().addNewTradeMode(tradeAction2, new Money(TradeMe.getInstance(), "MoneyAlternative"));
 	
 	// Reloads TradeMe config files to implement new trade mode
-	TradeMe.getInstance().getCM().reload();
+	TradeMe.getInstance().getConfigManager().reload();
 	Bukkit.getConsoleSender().sendMessage(ChatColor.YELLOW + "[TradeMeAddon] " + ChatColor.GOLD + "Injected alternative Exp trade mode");
     }
 
