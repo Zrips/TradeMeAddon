@@ -159,6 +159,8 @@ public class Exp implements TradeModeInterface {
 		    "[sourceexp]", leftSourceExp,
 		    "[targetlevel]", newTargetLevel,
 		    "[targetexp]", leftTargetExp) + mid)) {
+		
+		// Mandatory override. This will be performed when switching to this game mode. Additional actions can be done. Like playing sounds, effects and so on.
 		@Override
 		public void click(GUIClickType click) {
 		    trade.toogleMode(at, click, slot);
@@ -181,6 +183,7 @@ public class Exp implements TradeModeInterface {
 		    "[targetlevel]", newTargetLevel,
 		    "[targetexp]", leftTargetExp))) {
 
+		// Mandatory override. This will be performed when clicking on appropriate amount change button. Additional actions can be done. Like playing sounds, effects and so on.
 		@Override
 		public void click(GUIClickType click) {
 		    trade.amountClick(at, click, this.getSlot() - 45, slot);
